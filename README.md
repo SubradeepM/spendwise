@@ -1,7 +1,7 @@
 # SpendWise 💰
 ### AI-Powered Zero-Cost Budgeting Tool
 
-🔗 **Live Demo → https://yourusername.github.io/spendwise**
+🔗 **Live Demo → https://SubradeepM.github.io/spendwise**
 
 
 ## What it does
