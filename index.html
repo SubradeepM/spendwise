@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SpendWise — AI Budget Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F5F0;--surface:#FFFFFF;--surface2:#F0EDE6;--border:rgba(0,0,0,0.08);
+  --text:#1A1814;--muted:#6B6760;--accent:#2D6A4F;--accent2:#E76F51;--accent3:#264653;
+  --yellow:#E9C46A;--green:#52B788;--red:#E63946;
+  --mono:'DM Mono',monospace;--sans:'Syne',sans-serif;
+}
+body{background:var(--bg);font-family:var(--sans);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.app{display:flex;height:780px;width:100%;max-width:1100px;border:0.5px solid var(--border);border-radius:16px;background:var(--bg);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.12)}
+.sidebar{width:220px;background:var(--accent3);display:flex;flex-direction:column;padding:24px 0;flex-shrink:0}
+.logo{padding:0 20px 28px}
+.logo-mark{font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.5px}
+.logo-sub{font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;font-family:var(--mono)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:rgba(255,255,255,0.6);transition:all 0.15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.9)}
+.nav-item.active{background:rgba(255,255,255,0.1);color:#fff;border-left-color:var(--green)}
+.nav-icon{width:16px;height:16px;flex-shrink:0}
+.nav-section{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.3);padding:18px 20px 6px;font-family:var(--mono)}
+.budget-pill{margin:auto 16px 20px;background:rgba(255,255,255,0.08);border-radius:10px;padding:12px}
+.bp-label{font-size:10px;color:rgba(255,255,255,0.5);font-family:var(--mono);margin-bottom:4px}
+.bp-amount{font-size:20px;font-weight:700;color:#fff;font-family:var(--mono)}
+.bp-bar{height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin-top:8px}
+.bp-fill{height:100%;background:var(--green);border-radius:2px;width:63%}
+.bp-note{font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;font-family:var(--mono)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:20px 28px 0;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-size:20px;font-weight:700;color:var(--text)}
+.topbar-date{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.scan-btn{background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-family:var(--sans);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity 0.15s}
+.scan-btn:hover{opacity:0.88}
+.tabs{display:flex;gap:0;padding:0 28px;border-bottom:0.5px solid var(--border);background:var(--surface);margin-top:4px}
+.tab{padding:10px 16px;font-size:12px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.15s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.view{display:none;flex:1;flex-direction:column;overflow:hidden}
+.view.active{display:flex}
+.content{flex:1;overflow-y:auto;padding:20px 28px 24px;display:flex;flex-direction:column;gap:20px;scrollbar-width:thin}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat-card{background:var(--surface);border-radius:12px;padding:14px 16px;border:0.5px solid var(--border)}
+.sc-label{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.3px}
+.sc-value{font-size:22px;font-weight:700;color:var(--text);font-family:var(--mono);margin-top:2px}
+.sc-delta{font-size:11px;font-family:var(--mono);margin-top:3px}
+.delta-up{color:var(--red)}
+.delta-down{color:var(--green)}
+.two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.panel{background:var(--surface);border-radius:12px;border:0.5px solid var(--border);overflow:hidden}
+.panel-head{padding:14px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:13px;font-weight:600;color:var(--text)}
+.panel-action{font-size:11px;color:var(--accent);cursor:pointer;font-family:var(--mono)}
+.txn-item{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:0.5px solid var(--border);transition:background 0.1s;cursor:pointer}
+.txn-item:last-child{border-bottom:none}
+.txn-item:hover{background:var(--surface2)}
+.txn-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.txn-info{flex:1;min-width:0}
+.txn-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.txn-meta{font-size:11px;color:var(--muted);font-family:var(--mono);display:flex;gap:6px;align-items:center;margin-top:1px}
+.cat-tag{background:var(--surface2);border-radius:4px;padding:1px 6px;font-size:10px}
+.txn-amt{font-size:14px;font-weight:600;font-family:var(--mono);flex-shrink:0}
+.amt-neg{color:var(--text)}
+.amt-pos{color:var(--green)}
+.ai-badge{font-size:9px;background:#E8F5F0;color:var(--accent);border-radius:3px;padding:1px 5px;font-family:var(--mono)}
+.donut-wrap{padding:16px;display:flex;gap:16px;align-items:center}
+.cat-legend{flex:1;display:flex;flex-direction:column;gap:7px}
+.leg-item{display:flex;align-items:center;gap:8px}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.leg-name{font-size:12px;flex:1}
+.leg-amt{font-size:12px;font-family:var(--mono);color:var(--muted)}
+.leg-pct{font-size:11px;font-family:var(--mono);color:var(--muted)}
+.insight-item{padding:12px 16px;border-bottom:0.5px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+.insight-item:last-child{border-bottom:none}
+.ins-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.ins-body{flex:1}
+.ins-title{font-size:12px;font-weight:600}
+.ins-text{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.ins-warn{background:#FFF4E0}
+.ins-good{background:#E8F5F0}
+.ins-info{background:#E8EFF5}
+.bar-chart{padding:16px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-label{font-size:11px;font-family:var(--mono);color:var(--muted);width:60px;text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px}
+.bar-val{font-size:11px;font-family:var(--mono);color:var(--muted);width:60px;flex-shrink:0}
+.budget-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding:20px 28px;overflow-y:auto}
+.bcat-card{background:var(--surface);border-radius:12px;border:0.5px solid var(--border);padding:14px 16px}
+.bcat-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.bcat-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.bcat-status{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px}
+.status-ok{background:#E8F5F0;color:var(--accent)}
+.status-warn{background:#FFF4E0;color:#B87D1C}
+.status-over{background:#FFECEC;color:var(--red)}
+.bcat-bar{height:6px;background:var(--surface2);border-radius:3px;margin-bottom:8px;overflow:hidden}
+.bcat-fill{height:100%;border-radius:3px}
+.bcat-nums{display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);color:var(--muted)}
+.chat-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px 28px;display:flex;flex-direction:column;gap:12px;scrollbar-width:thin}
+.msg{max-width:72%}
+.msg-ai{align-self:flex-start}
+.msg-user{align-self:flex-end}
+.msg-bubble{border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.5}
+.ai-bubble{background:var(--surface);border:0.5px solid var(--border);color:var(--text);border-bottom-left-radius:4px}
+.user-bubble{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.msg-time{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px;padding:0 4px}
+.chat-input-row{padding:12px 28px 16px;border-top:0.5px solid var(--border);display:flex;gap:8px;background:var(--surface)}
+.chat-input{flex:1;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none}
+.chat-input:focus{border-color:var(--accent)}
+.chat-send{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer}
+.chat-send:hover{opacity:0.88}
+.typing{display:flex;gap:4px;align-items:center;padding:8px 12px}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:bounce 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:0.2s}
+.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:16px;width:480px;max-width:95vw;overflow:hidden;max-height:90vh;overflow-y:auto}
+.modal-head{padding:20px 24px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:700}
+.close-btn{background:var(--surface2);border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:20px 24px}
+.upload-drop{border:1.5px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;margin-bottom:16px;transition:all 0.2s}
+.upload-drop:hover{border-color:var(--accent);background:#f0faf5}
+.drop-icon{font-size:32px;margin-bottom:8px}
+.drop-text{font-size:14px;font-weight:600}
+.drop-sub{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:4px}
+.scan-types{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.type-pill{background:var(--surface2);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--muted);font-family:var(--mono)}
+.ai-processing{background:#F0FAF5;border-radius:10px;padding:16px;margin-bottom:16px;display:none}
+.proc-row{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px}
+.proc-row:last-child{margin-bottom:0}
+.proc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.proc-done{background:var(--green)}
+.proc-anim{background:var(--yellow);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.result-card{background:var(--surface2);border-radius:10px;padding:16px;display:none}
+.rc-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:0.5px solid var(--border);align-items:center}
+.rc-row:last-child{border-bottom:none}
+.rc-key{color:var(--muted);font-family:var(--mono);font-size:11px}
+.rc-val{font-weight:600;font-family:var(--mono);font-size:13px}
+.add-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;width:100%;margin-top:14px;display:none}
+.add-btn:hover{opacity:0.88}
+.file-input{display:none}
+.demo-btn{background:transparent;border:0.5px solid var(--border);border-radius:6px;padding:6px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;color:var(--muted);display:block;margin:8px auto 0}
+.demo-btn:hover{background:var(--surface2)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">SpendWise</div>
+      <div class="logo-sub">AI Budget Tool</div>
+    </div>
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="switchView('dashboard',this,0)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.6"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.6"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.4"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="switchView('transactions',this,1)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Transactions
+    </div>
+    <div class="nav-item" onclick="switchView('budgets',this,2)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Budgets
+    </div>
+    <div class="nav-section">Tools</div>
+    <div class="nav-item" onclick="switchView('aiassist',this,3)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8c0 1.17.31 2.27.85 3.22L1.5 14.5l3.28-.85C5.73 14.19 6.83 14.5 8 14.5c3.59 0 6.5-2.91 6.5-6.5S11.59 1.5 8 1.5z" stroke="currentColor" stroke-width="1.3"/><circle cx="5.5" cy="8" r="0.8" fill="currentColor"/><circle cx="8" cy="8" r="0.8" fill="currentColor"/><circle cx="10.5" cy="8" r="0.8" fill="currentColor"/></svg>
+      AI Advisor
+    </div>
+    <div class="nav-item" onclick="openScan()">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Scan Receipt
+    </div>
+    <div class="budget-pill">
+      <div class="bp-label">MONTHLY BUDGET</div>
+      <div class="bp-amount">₹24,680</div>
+      <div class="bp-bar"><div class="bp-fill"></div></div>
+      <div class="bp-note">63% used · 13 days left</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="view-title">Dashboard</div>
+        <div class="topbar-date">April 2026 · 14 transactions scanned</div>
+      </div>
+      <button class="scan-btn" onclick="openScan()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="white" stroke-width="1.5"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="white" stroke-width="1.5"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="white" stroke-width="1.5"/><path d="M9 11.5h5M11.5 9v5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Scan Receipt
+      </button>
+    </div>
+    <div class="tabs" id="tabs-bar">
+      <div class="tab active" onclick="switchView('dashboard',null,0)">Overview</div>
+      <div class="tab" onclick="switchView('transactions',null,1)">Transactions</div>
+      <div class="tab" onclick="switchView('budgets',null,2)">Budgets</div>
+      <div class="tab" onclick="switchView('aiassist',null,3)">AI Advisor</div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="content">
+        <div class="stat-row">
+          <div class="stat-card"><div class="sc-label">TOTAL SPENT</div><div class="sc-value">₹15,540</div><div class="sc-delta delta-up">+12% vs last month</div></div>
+          <div class="stat-card"><div class="sc-label">RECEIPTS SCANNED</div><div class="sc-value">14</div><div class="sc-delta delta-down">AI saved 34 mins</div></div>
+          <div class="stat-card"><div class="sc-label">REMAINING</div><div class="sc-value">₹9,460</div><div class="sc-delta" style="color:var(--muted)">of ₹25,000 budget</div></div>
+          <div class="stat-card"><div class="sc-label">LARGEST EXPENSE</div><div class="sc-value">₹3,200</div><div class="sc-delta" style="color:var(--muted)">Groceries · Apr 8</div></div>
+        </div>
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Recent transactions</div><div class="panel-action" onclick="switchView('transactions',null,1)">View all →</div></div>
+            <div>
+              <div class="txn-item"><div class="txn-icon" style="background:#E8F5F0">🛒</div><div class="txn-info"><div class="txn-name">Big Bazaar</div><div class="txn-meta"><span class="cat-tag">Groceries</span>Apr 12 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹2,140</div></div>
+              <div class="txn-item"><div class="txn-icon" style="background:#FFF4E0">🍜</div><div class="txn-info"><div class="txn-name">Swiggy Order</div><div class="txn-meta"><span class="cat-tag">Food</span>Apr 11 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹480</div></div>
+              <div class="txn-item"><div class="txn-icon" style="background:#EEF2FF">⚡</div><div class="txn-info"><div class="txn-name">Electricity Bill</div><div class="txn-meta"><span class="cat-tag">Utilities</span>Apr 10</div></div><div class="txn-amt amt-neg">-₹1,850</div></div>
+              <div class="txn-item"><div class="txn-icon" style="background:#F0F8FF">🎬</div><div class="txn-info"><div class="txn-name">Netflix Premium</div><div class="txn-meta"><span class="cat-tag">Entertainment</span>Apr 9 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹649</div></div>
+              <div class="txn-item"><div class="txn-icon" style="background:#FFF0F0">💊</div><div class="txn-info"><div class="txn-name">Apollo Pharmacy</div><div class="txn-meta"><span class="cat-tag">Health</span>Apr 8 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹390</div></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Spending by category</div></div>
+              <div class="donut-wrap">
+                <svg width="84" height="84" viewBox="0 0 84 84" style="flex-shrink:0">
+                  <circle cx="42" cy="42" r="32" fill="none" stroke="#F0EDE6" stroke-width="14"/>
+                  <circle cx="42" cy="42" r="32" fill="none" stroke="#2D6A4F" stroke-width="14" stroke-dasharray="80 121" stroke-dashoffset="8"/>
+                  <circle cx="42" cy="42" r="32" fill="none" stroke="#E9C46A" stroke-width="14" stroke-dasharray="38 163" stroke-dashoffset="-72"/>
+                  <circle cx="42" cy="42" r="32" fill="none" stroke="#E76F51" stroke-width="14" stroke-dasharray="26 175" stroke-dashoffset="-110"/>
+                  <circle cx="42" cy="42" r="32" fill="none" stroke="#264653" stroke-width="14" stroke-dasharray="18 183" stroke-dashoffset="-136"/>
+                  <text x="42" y="39" text-anchor="middle" font-family="DM Mono,monospace" font-size="11" fill="#1A1814" font-weight="500">₹15.5k</text>
+                  <text x="42" y="51" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#6B6760">total</text>
+                </svg>
+                <div class="cat-legend">
+                  <div class="leg-item"><div class="leg-dot" style="background:#2D6A4F"></div><div class="leg-name">Groceries</div><div class="leg-amt">32%</div></div>
+                  <div class="leg-item"><div class="leg-dot" style="background:#E9C46A"></div><div class="leg-name">Food</div><div class="leg-amt">19%</div></div>
+                  <div class="leg-item"><div class="leg-dot" style="background:#E76F51"></div><div class="leg-name">Utilities</div><div class="leg-amt">13%</div></div>
+                  <div class="leg-item"><div class="leg-dot" style="background:#264653"></div><div class="leg-name">Transport</div><div class="leg-amt">11%</div></div>
+                  <div class="leg-item"><div class="leg-dot" style="background:#B0A89A"></div><div class="leg-name">Other</div><div class="leg-amt">25%</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">AI insights</div></div>
+              <div>
+                <div class="insight-item"><div class="ins-icon ins-warn">⚠️</div><div class="ins-body"><div class="ins-title">Food budget 82% used</div><div class="ins-text">₹2,950 of ₹3,600 spent with 13 days left.</div></div></div>
+                <div class="insight-item"><div class="ins-icon ins-good">✓</div><div class="ins-body"><div class="ins-title">Utilities under control</div><div class="ins-text">Down ₹340 vs last month. Great job!</div></div></div>
+                <div class="insight-item"><div class="ins-icon ins-info">💡</div><div class="ins-body"><div class="ins-title">Saving opportunity</div><div class="ins-text">Swiggy up 40% — cooking saves ~₹800/mo.</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Weekly spend trend</div></div>
+          <div class="bar-chart">
+            <div class="bar-row"><div class="bar-label">Week 1</div><div class="bar-track"><div class="bar-fill" style="width:55%;background:#264653"></div></div><div class="bar-val">₹3,420</div></div>
+            <div class="bar-row"><div class="bar-label">Week 2</div><div class="bar-track"><div class="bar-fill" style="width:72%;background:#264653"></div></div><div class="bar-val">₹4,580</div></div>
+            <div class="bar-row"><div class="bar-label">Week 3</div><div class="bar-track"><div class="bar-fill" style="width:88%;background:#E76F51"></div></div><div class="bar-val">₹5,490</div></div>
+            <div class="bar-row"><div class="bar-label">Week 4 ↗</div><div class="bar-track"><div class="bar-fill" style="width:32%;background:#2D6A4F"></div></div><div class="bar-val">₹2,050</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="view" id="view-transactions">
+      <div class="content">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">All transactions</div><div class="panel-action" onclick="openScan()">+ Add receipt</div></div>
+          <div id="all-txns">
+            <div class="txn-item"><div class="txn-icon" style="background:#E8F5F0">🛒</div><div class="txn-info"><div class="txn-name">Big Bazaar — Groceries</div><div class="txn-meta"><span class="cat-tag">Groceries</span>Apr 12, 2026 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹2,140</div></div>
+            <div class="txn-item"><div class="txn-icon" style="background:#FFF4E0">🍜</div><div class="txn-info"><div class="txn-name">Swiggy — Dinner Order</div><div class="txn-meta"><span class="cat-tag">Food</span>Apr 11, 2026 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹480</div></div>
+            <div class="txn-item"><div class="txn-icon" style="background:#EEF2FF">⚡</div><div class="txn-info"><div class="txn-name">WBSEDCL Electricity Bill</div><div class="txn-meta"><span class="cat-tag">Utilities</span>Apr 10, 2026</div></div><div class="txn-amt amt-neg">-₹1,850</div></div>
+            <div class="txn-item"><div class="txn-icon" style="background:#F0F8FF">🎬</div><div class="txn-info"><div class="txn-name">Netflix Premium India</div><div class="txn-meta"><span class="cat-tag">Entertainment</span>Apr 9, 2026 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹649</div></div>
+            <div class="txn-item"><div class="txn-icon" style="background:#FFF0F0">💊</div><div class="txn-info"><div class="txn-name">Apollo Pharmacy</div><div class="txn-meta"><span class="cat-tag">Health</span>Apr 8, 2026 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹390</div></div>
+            <div class="txn-item"><div class="txn-icon" style="background:#F5F0FF">🚌</div><div class="txn-info"><div class="txn-name">Uber — Airport Trip</div><div class="txn-meta"><span class="cat-tag">Transport</span>Apr 7, 2026 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹840</div></div>
+            <div class="txn-item"><div class="txn-icon" style="background:#E8F5F0">🛒</div><div class="txn-info"><div class="txn-name">Reliance Fresh</div><div class="txn-meta"><span class="cat-tag">Groceries</span>Apr 6, 2026 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹1,270</div></div>
+            <div class="txn-item"><div class="txn-icon" style="background:#FFF4E0">☕</div><div class="txn-info"><div class="txn-name">Café Coffee Day</div><div class="txn-meta"><span class="cat-tag">Food</span>Apr 5, 2026 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-₹320</div></div>
+            <div class="txn-item"><div class="txn-icon" style="background:#FFFAE0">📚</div><div class="txn-info"><div class="txn-name">Amazon — Books</div><div class="txn-meta"><span class="cat-tag">Education</span>Apr 4, 2026</div></div><div class="txn-amt amt-neg">-₹760</div></div>
+            <div class="txn-item"><div class="txn-icon" style="background:#F5F5F5">🏠</div><div class="txn-info"><div class="txn-name">House Rent</div><div class="txn-meta"><span class="cat-tag">Housing</span>Apr 1, 2026</div></div><div class="txn-amt amt-neg">-₹8,000</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUDGETS -->
+    <div class="view" id="view-budgets">
+      <div class="budget-grid">
+        <div class="bcat-card"><div class="bcat-top"><div class="bcat-name">🛒 Groceries</div><div class="bcat-status status-ok">On track</div></div><div class="bcat-bar"><div class="bcat-fill" style="width:82%;background:#2D6A4F"></div></div><div class="bcat-nums"><span>₹4,980 spent</span><span>₹6,000 budget</span></div></div>
+        <div class="bcat-card"><div class="bcat-top"><div class="bcat-name">🍜 Food & Dining</div><div class="bcat-status status-warn">Watch out</div></div><div class="bcat-bar"><div class="bcat-fill" style="width:82%;background:#E9C46A"></div></div><div class="bcat-nums"><span>₹2,950 spent</span><span>₹3,600 budget</span></div></div>
+        <div class="bcat-card"><div class="bcat-top"><div class="bcat-name">⚡ Utilities</div><div class="bcat-status status-ok">On track</div></div><div class="bcat-bar"><div class="bcat-fill" style="width:55%;background:#2D6A4F"></div></div><div class="bcat-nums"><span>₹2,060 spent</span><span>₹3,750 budget</span></div></div>
+        <div class="bcat-card"><div class="bcat-top"><div class="bcat-name">🚌 Transport</div><div class="bcat-status status-ok">On track</div></div><div class="bcat-bar"><div class="bcat-fill" style="width:64%;background:#2D6A4F"></div></div><div class="bcat-nums"><span>₹1,780 spent</span><span>₹2,800 budget</span></div></div>
+        <div class="bcat-card"><div class="bcat-top"><div class="bcat-name">🎬 Entertainment</div><div class="bcat-status status-warn">Watch out</div></div><div class="bcat-bar"><div class="bcat-fill" style="width:75%;background:#E9C46A"></div></div><div class="bcat-nums"><span>₹1,120 spent</span><span>₹1,500 budget</span></div></div>
+        <div class="bcat-card"><div class="bcat-top"><div class="bcat-name">💊 Health</div><div class="bcat-status status-ok">On track</div></div><div class="bcat-bar"><div class="bcat-fill" style="width:26%;background:#52B788"></div></div><div class="bcat-nums"><span>₹390 spent</span><span>₹1,500 budget</span></div></div>
+        <div class="bcat-card"><div class="bcat-top"><div class="bcat-name">📚 Education</div><div class="bcat-status status-ok">On track</div></div><div class="bcat-bar"><div class="bcat-fill" style="width:38%;background:#2D6A4F"></div></div><div class="bcat-nums"><span>₹760 spent</span><span>₹2,000 budget</span></div></div>
+        <div class="bcat-card"><div class="bcat-top"><div class="bcat-name">🏠 Housing</div><div class="bcat-status status-ok">Fixed</div></div><div class="bcat-bar"><div class="bcat-fill" style="width:100%;background:#264653"></div></div><div class="bcat-nums"><span>₹8,000 spent</span><span>₹8,000 budget</span></div></div>
+      </div>
+    </div>
+
+    <!-- AI ADVISOR -->
+    <div class="view" id="view-aiassist">
+      <div class="chat-panel">
+        <div class="chat-msgs" id="chat-msgs">
+          <div class="msg msg-ai"><div class="msg-bubble ai-bubble">Hi! I'm your SpendWise AI advisor. I've analyzed your April 2026 spending. You've spent ₹15,540 so far — your food spending is at 82% of budget with 13 days remaining. Want tips to stay on track?</div><div class="msg-time">AI Advisor · now</div></div>
+          <div class="msg msg-user"><div class="msg-bubble user-bubble">Where am I overspending this month?</div><div class="msg-time">You · just now</div></div>
+          <div class="msg msg-ai"><div class="msg-bubble ai-bubble">Based on your scanned receipts, Food & Dining is your biggest risk — ₹2,950 of your ₹3,600 budget is already used. Swiggy orders alone account for ₹940 this month (up 40% from March). Entertainment is also at 75%. I'd suggest limiting delivery orders to 2x/week to save ~₹800.</div><div class="msg-time">AI Advisor · just now</div></div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" placeholder="Ask about your spending, budgets, savings..." onkeydown="handleChat(event)"/>
+          <button class="chat-send" onclick="sendChat()">Ask →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCAN MODAL -->
+<div class="modal-overlay" id="scan-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Scan receipt or bill</div>
+      <button class="close-btn" onclick="closeScan()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-drop" onclick="document.getElementById('file-in').click()">
+        <div class="drop-icon">📸</div>
+        <div class="drop-text">Upload photo or video</div>
+        <div class="drop-sub">Tap to choose file · drag & drop supported</div>
+        <div class="scan-types">
+          <span class="type-pill">JPG/PNG</span>
+          <span class="type-pill">PDF</span>
+          <span class="type-pill">MP4/MOV</span>
+          <span class="type-pill">HEIC</span>
+        </div>
+      </div>
+      <input type="file" id="file-in" class="file-input" accept="image/*,video/*,.pdf" onchange="handleFile(this)"/>
+      <button class="demo-btn" onclick="simulateScan()">Try demo scan (no file needed)</button>
+
+      <div class="ai-processing" id="ai-proc">
+        <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:10px;font-family:var(--mono)">AI PROCESSING RECEIPT</div>
+        <div class="proc-row"><div class="proc-dot proc-done" id="p1"></div><span style="font-size:12px">Image quality check</span></div>
+        <div class="proc-row"><div class="proc-dot" id="p2" style="background:var(--surface2)"></div><span style="font-size:12px">Extracting text (OCR)</span></div>
+        <div class="proc-row"><div class="proc-dot" id="p3" style="background:var(--surface2)"></div><span style="font-size:12px">Identifying merchant &amp; items</span></div>
+        <div class="proc-row"><div class="proc-dot" id="p4" style="background:var(--surface2)"></div><span style="font-size:12px">Auto-categorizing expense</span></div>
+      </div>
+
+      <div class="result-card" id="result-card">
+        <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:12px;font-family:var(--mono)">EXTRACTED DATA — REVIEW & CONFIRM</div>
+        <div class="rc-row"><span class="rc-key">MERCHANT</span><span class="rc-val" id="rc-merchant">Spencer's Retail</span></div>
+        <div class="rc-row"><span class="rc-key">DATE</span><span class="rc-val" id="rc-date">Apr 15, 2026</span></div>
+        <div class="rc-row"><span class="rc-key">TOTAL AMOUNT</span><span class="rc-val" id="rc-amount">₹1,840</span></div>
+        <div class="rc-row"><span class="rc-key">CATEGORY</span><span class="rc-val" id="rc-cat">🛒 Groceries</span></div>
+        <div class="rc-row"><span class="rc-key">ITEMS DETECTED</span><span class="rc-val" id="rc-items">8 items</span></div>
+        <div class="rc-row"><span class="rc-key">PAYMENT METHOD</span><span class="rc-val" id="rc-pay">UPI / PhonePe</span></div>
+        <div class="rc-row"><span class="rc-key">CONFIDENCE</span><span class="rc-val" style="color:var(--green)">97% accurate</span></div>
+      </div>
+      <button class="add-btn" id="add-btn" onclick="addTransaction()">Add to transactions</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const views=['dashboard','transactions','budgets','aiassist'];
+const titles={dashboard:'Dashboard',transactions:'All Transactions',budgets:'Budget Tracker',aiassist:'AI Advisor'};
+function switchView(v,navEl,tabIdx){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  if(navEl){document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));navEl.classList.add('active');}
+  const tabs=document.querySelectorAll('.tab');
+  tabs.forEach(el=>el.classList.remove('active'));
+  if(tabIdx!==null&&tabIdx!==undefined)tabs[tabIdx].classList.add('active');
+  document.getElementById('view-title').textContent=titles[v];
+  if(v==='aiassist'){setTimeout(()=>{const m=document.getElementById('chat-msgs');m.scrollTop=m.scrollHeight;},50);}
+}
+function openScan(){document.getElementById('scan-modal').classList.add('open');}
+function closeScan(){
+  document.getElementById('scan-modal').classList.remove('open');
+  document.getElementById('ai-proc').style.display='none';
+  document.getElementById('result-card').style.display='none';
+  document.getElementById('add-btn').style.display='none';
+  ['p2','p3','p4'].forEach(id=>{const d=document.getElementById(id);d.className='proc-dot';d.style.background='var(--surface2)';});
+  document.getElementById('file-in').value='';
+}
+function handleFile(input){if(input.files.length)simulateScan();}
+function simulateScan(){
+  const proc=document.getElementById('ai-proc');
+  proc.style.display='block';
+  document.getElementById('result-card').style.display='none';
+  document.getElementById('add-btn').style.display='none';
+  ['p2','p3','p4'].forEach(id=>{const d=document.getElementById(id);d.className='proc-dot';d.style.background='var(--surface2)';});
+  setTimeout(()=>{const d=document.getElementById('p2');d.className='proc-dot proc-anim';d.style.background='';},400);
+  setTimeout(()=>{document.getElementById('p2').className='proc-dot proc-done';document.getElementById('p2').style.background='';const d=document.getElementById('p3');d.className='proc-dot proc-anim';d.style.background='';},1300);
+  setTimeout(()=>{document.getElementById('p3').className='proc-dot proc-done';document.getElementById('p3').style.background='';const d=document.getElementById('p4');d.className='proc-dot proc-anim';d.style.background='';},2200);
+  setTimeout(()=>{
+    document.getElementById('p4').className='proc-dot proc-done';document.getElementById('p4').style.background='';
+    const ms=['Spencer\'s Retail','D-Mart','Zomato Order','Ola Cab','Apollo Pharmacy','Café Mocha','Flipkart Order'];
+    const cs=['🛒 Groceries','🛒 Groceries','🍜 Food & Dining','🚌 Transport','💊 Health','☕ Food & Dining','🛍️ Shopping'];
+    const as=['₹1,840','₹2,390','₹560','₹320','₹890','₹240','₹1,599'];
+    const ps=['UPI / PhonePe','Credit Card','Debit Card','UPI / GPay','Cash','Net Banking','Credit Card'];
+    const its=['8 items','12 items','1 order','1 ride','5 items','2 items','3 items'];
+    const i=Math.floor(Math.random()*ms.length);
+    document.getElementById('rc-merchant').textContent=ms[i];
+    document.getElementById('rc-amount').textContent=as[i];
+    document.getElementById('rc-cat').textContent=cs[i];
+    document.getElementById('rc-pay').textContent=ps[i];
+    document.getElementById('rc-items').textContent=its[i];
+    document.getElementById('result-card').style.display='block';
+    document.getElementById('add-btn').style.display='block';
+  },3200);
+}
+function addTransaction(){
+  const m=document.getElementById('rc-merchant').textContent;
+  const a=document.getElementById('rc-amount').textContent;
+  const c=document.getElementById('rc-cat').textContent;
+  const emoji=c.split(' ')[0];
+  const catName=c.replace(emoji+' ','');
+  const li=document.createElement('div');
+  li.className='txn-item';
+  li.innerHTML=`<div class="txn-icon" style="background:#E8F5F0">${emoji}</div><div class="txn-info"><div class="txn-name">${m}</div><div class="txn-meta"><span class="cat-tag">${catName}</span>Apr 15, 2026 <span class="ai-badge">AI</span></div></div><div class="txn-amt amt-neg">-${a}</div>`;
+  document.getElementById('all-txns').insertBefore(li,document.getElementById('all-txns').firstChild);
+  closeScan();
+}
+const aiReplies=[
+  "Based on your spending pattern, you're on track to exceed your food budget by ₹620 this month. I suggest skipping 2 delivery orders this week to stay within limits.",
+  "Your groceries spending is actually efficient — ₹4,980 for the month is reasonable. The real issue is dining out and delivery apps eating into your budget.",
+  "You've saved ₹340 on utilities compared to March — great discipline! Consider redirecting those savings toward a ₹5,000 emergency fund.",
+  "Your top 3 merchants this month: Big Bazaar (₹2,140), Swiggy (₹940), and Uber (₹840). Batching grocery trips could cut that first one by 15-20%.",
+  "If you reduce Swiggy orders from daily to 3x/week, you'd save approximately ₹800/month — that's ₹9,600/year compounded into savings.",
+  "Your Week 3 spending spike (₹5,490) was your highest. Weekends appear to be high-spend days based on your receipt timestamps. Setting a weekend limit might help.",
+  "Looking at 3 months of data: your most consistent overspend category is Food & Dining. A weekly meal-prep habit could save you ₹1,200-₹1,500/month."
+];
+let aiIdx=2;
+function sendChat(){
+  const input=document.getElementById('chat-input');
+  const msgs=document.getElementById('chat-msgs');
+  const text=input.value.trim();
+  if(!text)return;
+  input.value='';
+  const u=document.createElement('div');u.className='msg msg-user';
+  u.innerHTML=`<div class="msg-bubble user-bubble">${text}</div><div class="msg-time">You · just now</div>`;
+  msgs.appendChild(u);
+  const t=document.createElement('div');t.className='msg msg-ai';
+  t.innerHTML=`<div class="msg-bubble ai-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  msgs.appendChild(t);msgs.scrollTop=msgs.scrollHeight;
+  setTimeout(()=>{
+    msgs.removeChild(t);
+    const a=document.createElement('div');a.className='msg msg-ai';
+    a.innerHTML=`<div class="msg-bubble ai-bubble">${aiReplies[aiIdx%aiReplies.length]}</div><div class="msg-time">AI Advisor · just now</div>`;
+    aiIdx++;msgs.appendChild(a);msgs.scrollTop=msgs.scrollHeight;
+  },1400);
+}
+function handleChat(e){if(e.key==='Enter')sendChat();}
+</script>
+</body>
+</html>
